@@ -4363,6 +4363,7 @@
 			baseConfigurationReference = 66E8CED514D08B9F00600592 /* lib.xcconfig */;
 			buildSettings = {
 				GCC_WARN_SIGN_COMPARE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				NIMBUS_FEATURE_NAME = attributedlabel;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -4373,6 +4374,7 @@
 			baseConfigurationReference = 66E8CED514D08B9F00600592 /* lib.xcconfig */;
 			buildSettings = {
 				GCC_WARN_SIGN_COMPARE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				NIMBUS_FEATURE_NAME = attributedlabel;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

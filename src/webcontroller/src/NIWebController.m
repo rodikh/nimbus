@@ -27,7 +27,6 @@
 @interface NIWebController()
 @property (nonatomic, strong) UIWebView* webView;
 @property (nonatomic, strong) UIToolbar* toolbar;
-@property (nonatomic, strong) UIActionSheet* actionSheet;
 
 @property (nonatomic, strong) UIBarButtonItem* backButton;
 @property (nonatomic, strong) UIBarButtonItem* forwardButton;
@@ -46,7 +45,6 @@
 
 
 - (void)dealloc {
-  _actionSheet.delegate = nil;
   _webView.delegate = nil;
 }
 
@@ -88,54 +86,6 @@
 
 - (void)didTapStopButton {
   [self.webView stopLoading];
-}
-
-- (void)didTapShareButton {
-  // Dismiss the action menu if the user taps the action button again on the iPad.
-  if ([self.actionSheet isVisible]) {
-    // It shouldn't be possible to tap the share action button again on anything but the iPad.
-    NIDASSERT(NIIsPad());
-
-    [self.actionSheet dismissWithClickedButtonIndex:[self.actionSheet cancelButtonIndex] animated:YES];
-
-    // We remove the action sheet here just in case the delegate isn't properly implemented.
-    self.actionSheet.delegate = nil;
-    self.actionSheet = nil;
-    self.actionSheetURL = nil;
-
-    // Don't show the menu again.
-    return;
-  }
-
-  // Remember the URL at this point
-  self.actionSheetURL = [self.URL copy];
-
-  if (nil == self.actionSheet) {
-    self.actionSheet =
-    [[UIActionSheet alloc] initWithTitle:[self.actionSheetURL absoluteString]
-                                delegate:self
-                       cancelButtonTitle:nil
-                  destructiveButtonTitle:nil
-                       otherButtonTitles:nil];
-
-    // Let -shouldPresentActionSheet: setup the action sheet
-    if (![self shouldPresentActionSheet:self.actionSheet] || self.actionSheet.numberOfButtons == 0) {
-      // A subclass decided to handle the action in another way
-      self.actionSheet = nil;
-      self.actionSheetURL = nil;
-      return;
-    }
-    // Add "Cancel" button except for iPads
-    if (!NIIsPad()) {
-      [self.actionSheet setCancelButtonIndex:[self.actionSheet addButtonWithTitle:NSLocalizedString(@"Cancel", @"")]];
-    }
-  }
-
-  if (NIIsPad()) {
-    [self.actionSheet showFromBarButtonItem:self.actionButton animated:YES];
-  } else {
-    [self.actionSheet showInView:self.view];
-  }
 }
 
 - (void)updateToolbarWithOrientation:(UIInterfaceOrientation)interfaceOrientation {
@@ -346,27 +296,6 @@
   [self webViewDidFinishLoad:webView];
 }
 
-#pragma mark - UIActionSheetDelegate
-
-
-- (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
-  if (actionSheet == self.actionSheet) {
-    if (buttonIndex == 0) {
-      [[UIApplication sharedApplication] openURL:self.actionSheetURL];
-    } else if (buttonIndex == 1) {
-      [[UIPasteboard generalPasteboard] setURL:self.actionSheetURL];
-    }
-  }
-}
-
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
-  if (actionSheet == self.actionSheet) {
-    self.actionSheet.delegate = nil;
-    self.actionSheet = nil;
-    self.actionSheetURL = nil;
-  }
-}
-
 #pragma mark - Public
 
 
@@ -413,14 +342,6 @@
   if ([self isViewLoaded]) {
     self.toolbar.tintColor = color;
   }
-}
-
-- (BOOL)shouldPresentActionSheet:(UIActionSheet *)actionSheet {
-  if (actionSheet == self.actionSheet && nil != self.actionSheetURL) {
-    [self.actionSheet addButtonWithTitle:NSLocalizedString(@"Open in Safari", @"")];
-    [self.actionSheet addButtonWithTitle:NSLocalizedString(@"Copy URL", @"")];
-  }
-  return YES;
 }
 
 @end

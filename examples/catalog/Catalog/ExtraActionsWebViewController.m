@@ -17,25 +17,4 @@
 #import "ExtraActionsWebViewController.h"
 
 @implementation ExtraActionsWebViewController
-
-- (BOOL)shouldPresentActionSheet:(UIActionSheet *)actionSheet {
-  // We call super here to populate the action sheet with the default actions.
-  [super shouldPresentActionSheet:actionSheet];
-
-  // Add our custom action.
-  [actionSheet addButtonWithTitle:@"Latest Docs"];
-
-  // Returning YES means that we want to allow this action sheet to appear.
-  // If we return NO then the action sheet would not appear and we'd be expected to have shown our
-  // own action sheet or dialog in some way.
-  return YES;
-}
-
-- (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
-  [super actionSheet:actionSheet clickedButtonAtIndex:buttonIndex];
-  if (buttonIndex == 2) {
-    [self openURL:[NSURL URLWithString:@"http://latest.docs.nimbuskit.info/"]];
-  }
-}
-
 @end

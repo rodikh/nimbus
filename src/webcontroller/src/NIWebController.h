@@ -74,7 +74,7 @@
  *
  * @ingroup NimbusWebController
  */
-@interface NIWebController : UIViewController <UIWebViewDelegate, UIActionSheetDelegate>
+@interface NIWebController : UIViewController <UIWebViewDelegate>
 
 // Designated initializer.
 - (id)initWithRequest:(NSURLRequest *)request;
@@ -91,10 +91,6 @@
 @property (nonatomic, weak) UIColor* toolbarTintColor;
 
 @property (nonatomic, readonly, strong) UIWebView* webView;
-
-// Subclassing
-- (BOOL)shouldPresentActionSheet:(UIActionSheet *)actionSheet;
-@property (nonatomic, strong) NSURL* actionSheetURL;
 
 @end
 

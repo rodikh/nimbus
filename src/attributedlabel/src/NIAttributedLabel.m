@@ -35,16 +35,6 @@
 #define _NI_POP_DIAGNOSTICS() \
   _Pragma ("clang diagnostic pop")
 
-#if defined(__IPHONE_8_3) && (__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_8_3)
-#define _NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_PUSH() \
-  _NI_PUSH_SCOPED_DIAGNOSTICS_COMMAND("clang diagnostic ignored \"-Wdeprecated-declarations\"")
-#define _NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_POP() \
-  _NI_POP_DIAGNOSTICS()
-#else
-#define _NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_PUSH()
-#define _NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_POP()
-#endif // defined(__IPHONE_8_3) && (__IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_8_3)
-
 // The number of seconds to wait before executing a long press action on the tapped link.
 static const NSTimeInterval kLongPressTimeInterval = 0.5;
 
@@ -274,7 +264,7 @@ CGSize NISizeOfAttributedStringConstrainedToSize(NSAttributedString* attributedS
 
 @end
 
-@interface NIAttributedLabel() <UIActionSheetDelegate>
+@interface NIAttributedLabel()
 
 @property (nonatomic, strong) NSMutableAttributedString* mutableAttributedString;
 
@@ -290,8 +280,6 @@ CGSize NISizeOfAttributedStringConstrainedToSize(NSAttributedString* attributedS
 
 @property (nonatomic, strong) NSTimer*  longPressTimer;
 @property (nonatomic)         CGPoint   touchPoint;
-
-@property (nonatomic, strong) NSTextCheckingResult* actionSheetLink;
 
 @property (nonatomic, copy) NSArray* accessibleElements;
 
@@ -1225,83 +1213,6 @@ CGSize NISizeOfAttributedStringConstrainedToSize(NSAttributedString* attributedS
   [self setNeedsDisplay];
 }
 
-_NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_PUSH()
-- (UIActionSheet *)actionSheetForResult:(NSTextCheckingResult *)result {
-  UIActionSheet* actionSheet =
-  [[UIActionSheet alloc] initWithTitle:nil
-                              delegate:self
-                     cancelButtonTitle:nil
-                destructiveButtonTitle:nil
-                     otherButtonTitles:nil];
-
-  NSString* title = nil;
-  if (NSTextCheckingTypeLink == result.resultType) {
-    if ([result.URL.scheme isEqualToString:@"mailto"]) {
-      title = result.URL.resourceSpecifier;
-      [actionSheet addButtonWithTitle:NSLocalizedString(@"Open in Mail", @"")];
-      [actionSheet addButtonWithTitle:NSLocalizedString(@"Copy Email Address", @"")];
-
-    } else {
-      title = result.URL.absoluteString;
-      [actionSheet addButtonWithTitle:NSLocalizedString(@"Open in Safari", @"")];
-      [actionSheet addButtonWithTitle:NSLocalizedString(@"Copy URL", @"")];
-    }
-
-  } else if (NSTextCheckingTypePhoneNumber == result.resultType) {
-    title = result.phoneNumber;
-    [actionSheet addButtonWithTitle:NSLocalizedString(@"Call", @"")];
-    [actionSheet addButtonWithTitle:NSLocalizedString(@"Copy Phone Number", @"")];
-
-  } else if (NSTextCheckingTypeAddress == result.resultType) {
-    title = [self.mutableAttributedString.string substringWithRange:self.actionSheetLink.range];
-    [actionSheet addButtonWithTitle:NSLocalizedString(@"Open in Maps", @"")];
-    [actionSheet addButtonWithTitle:NSLocalizedString(@"Copy Address", @"")];
-
-  } else {
-    // This type has not been implemented yet.
-    NIDASSERT(NO);
-    [actionSheet addButtonWithTitle:NSLocalizedString(@"Copy", @"")];
-  }
-  actionSheet.title = title;
-
-  if (!NIIsPad()) {
-    [actionSheet setCancelButtonIndex:[actionSheet addButtonWithTitle:NSLocalizedString(@"Cancel", @"")]];
-  }
-
-  return actionSheet;
-}
-_NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_POP()
-
-- (void)_longPressTimerDidFire:(NSTimer *)timer {
-  self.longPressTimer = nil;
-
-  if (nil != self.touchedLink) {
-    self.actionSheetLink = self.touchedLink;
-
-    _NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_PUSH()
-    UIActionSheet* actionSheet = [self actionSheetForResult:self.actionSheetLink];
-    _NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_POP()
-
-    BOOL shouldPresent = YES;
-    if ([self.delegate respondsToSelector:@selector(attributedLabel:shouldPresentActionSheet:withTextCheckingResult:atPoint:)]) {
-      // Give the delegate the opportunity to not show the action sheet or to present their own.
-      _NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_PUSH()
-      shouldPresent = [self.delegate attributedLabel:self shouldPresentActionSheet:actionSheet withTextCheckingResult:self.touchedLink atPoint:self.touchPoint];
-      _NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_POP()
-    }
-
-    if (shouldPresent) {
-      if (NIIsPad()) {
-        [actionSheet showFromRect:CGRectMake(self.touchPoint.x - 22, self.touchPoint.y - 22, 44, 44) inView:self animated:YES];
-      } else {
-        [actionSheet showInView:self];
-      }
-
-    } else {
-      self.actionSheetLink = nil;
-    }
-  }
-}
 
 - (void)_applyLinkStyleWithResults:(NSArray *)results toAttributedString:(NSMutableAttributedString *)attributedString {
   for (NSTextCheckingResult* result in results) {
@@ -1496,12 +1407,12 @@ _NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_POP()
 }
 
 - (void)drawHighlightWithRect:(CGRect)rect {
-  if ((nil == self.touchedLink && nil == self.actionSheetLink) || nil == self.highlightedLinkBackgroundColor) {
+  if (nil == self.touchedLink || nil == self.highlightedLinkBackgroundColor) {
     return;
   }
   [self.highlightedLinkBackgroundColor setFill];
 
-  NSRange linkRange = nil != self.touchedLink ? self.touchedLink.range : self.actionSheetLink.range;
+  NSRange linkRange = self.touchedLink.range;
 
   CFArrayRef lines = CTFrameGetLines(self.textFrame);
   CFIndex count = CFArrayGetCount(lines);
@@ -1841,65 +1752,6 @@ _NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_POP()
 - (NSInteger)indexOfAccessibilityElement:(id)element {
   return [self.accessibleElements indexOfObject:element];
 }
-
-#pragma mark - UIActionSheetDelegate
-
-_NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_PUSH()
-- (void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
-  if (NSTextCheckingTypeLink == self.actionSheetLink.resultType) {
-    if (buttonIndex == 0) {
-      [[UIApplication sharedApplication] openURL:self.actionSheetLink.URL];
-
-    } else if (buttonIndex == 1) {
-      if ([self.actionSheetLink.URL.scheme isEqualToString:@"mailto"]) {
-        [[UIPasteboard generalPasteboard] setString:self.actionSheetLink.URL.resourceSpecifier];
-
-      } else {
-        [[UIPasteboard generalPasteboard] setURL:self.actionSheetLink.URL];
-      }
-    }
-
-  } else if (NSTextCheckingTypePhoneNumber == self.actionSheetLink.resultType) {
-    if (buttonIndex == 0) {
-      [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[@"tel:" stringByAppendingString:self.actionSheetLink.phoneNumber]]];
-
-    } else if (buttonIndex == 1) {
-      [[UIPasteboard generalPasteboard] setString:self.actionSheetLink.phoneNumber];
-    }
-
-  } else if (NSTextCheckingTypeAddress == self.actionSheetLink.resultType) {
-    NSString* address = [self.mutableAttributedString.string substringWithRange:self.actionSheetLink.range];
-    if (buttonIndex == 0) {
-      NSString *escapedAddress =
-          NIStringByAddingPercentEscapesForURLParameterString(address);
-      NSString *URLString =
-          [NSString stringWithFormat:@"https://maps.google.com/maps?q=%@", escapedAddress];
-      NSURL *URL = [NSURL URLWithString:URLString];
-      [[UIApplication sharedApplication] openURL:URL];
-
-    } else if (buttonIndex == 1) {
-      [[UIPasteboard generalPasteboard] setString:address];
-    }
-
-  } else {
-    // Unsupported data type only allows the user to copy.
-    if (buttonIndex == 0) {
-      NSString* text = [self.mutableAttributedString.string substringWithRange:self.actionSheetLink.range];
-      [[UIPasteboard generalPasteboard] setString:text];
-    }
-  }
-
-  self.actionSheetLink = nil;
-  [self setNeedsDisplay];
-}
-_NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_POP()
-
-_NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_PUSH()
-- (void)actionSheetCancel:(UIActionSheet *)actionSheet {
-  self.actionSheetLink = nil;
-  [self setNeedsDisplay];
-}
-_NI_UIACTIONSHEET_DEPRECATION_SUPPRESSION_POP()
 
 #pragma mark - Inline Image Support
 
